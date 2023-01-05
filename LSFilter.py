@@ -6,24 +6,23 @@ import numpy as np
 # Copyright (c) 2023 Miller Cy Chan
 
 class LSFilter:
-    def __init__(self, pixels, side = 5, beta = 1e-6, lamda = 5):
+    def __init__(self, pixels, side = 5, beta = 1500, lamda = 1e-4):
         self._width, self._height, _ = pixels.shape
         self._pixels = pixels
         self._side = np.clip(side, 3, 5)
         self._offset = self._side // 2
-        self._beta = beta
-        self._lamda = lamda
+        self._beta = lamda
+        self._lamda = beta / 500 if beta > 500 else beta / 50
 
 
     def getValue(self, x, y, x1, y1):
-        i, j = x + y * self._width, x1 + y1 * self._width
-        if j < 0 or x1 >= self._width or y1 >= self._height:
+        if x1 < 0 or y1 < 0 or x1 >= self._width or y1 >= self._height:
             return 0
-        if i == j:
+        if (x, y) == (x1, y1):
             return 1
 
         pixels = self._pixels
-        value = np.sum(np.abs(pixels[x1, y1] - pixels[x, y]))
+        value = np.sum((pixels[x1, y1] - pixels[x, y]) ** 2)
         return -np.exp(-self._beta * value)
 
 
@@ -31,11 +30,11 @@ class LSFilter:
         offset, side = self._offset, self._side
         I = np.eye(side)
         laplacian = np.zeros(I.shape)
-        for j in range(side):
-            y1 = y + j - offset
-            for i in range(side):
-                x1 = x + i - offset
-                laplacian[i, j] = self.getValue(x, y, x1, y1)
+        for j in range(-offset, offset):
+            y1 = y + j
+            for i in range(-offset, offset):
+                x1 = x + i
+                laplacian[i + offset, j + offset] = self.getValue(x, y, x1, y1)
 
         result = I * self._lamda + laplacian @ laplacian.T
         return np.linalg.inv(result) * self._lamda
@@ -47,24 +46,22 @@ class LSFilter:
         sMatrix = self.getSmoothedKernel(x, y)
 
         acc = np.zeros(pixels.shape[2])
-        for j in range(side):
-            y1 = y + j - offset
-            if y1 < 0:
+        for j in range(-offset, offset):
+            y1 = y + j
+            if y1 < 0 or y1 >= height:
                 continue
-            if y1 >= height:
-                break
-            for i in range(side):
-                x1 = x + j - offset
-                if x1 < 0:
+
+            for i in range(-offset, offset):
+                x1 = x + j
+                if x1 < 0 or x1 >= width:
                     continue
-                if x1 >= width:
-                    break
-                acc += pixels[x1, y1] * sMatrix[i, j]
+
+                acc += pixels[x1, y1] * sMatrix[i + offset, j + offset]
         return np.clip(acc, 0, 255)
 
 
     def filter(self):
-        pixels, qPixels = self._pixels, np.copy(self._pixels)
+        pixels, qPixels = self._pixels, self._pixels.copy()
         width, height = self._width, self._height
         for y in range(height):
             for x in range(width):

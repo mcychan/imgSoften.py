@@ -1,13 +1,13 @@
 import cv2
 import numpy as np
-import pathlib
+from pathlib import Path
 import sys
 import traceback
 
 from LSFilter import LSFilter
 
 def main(file_name):
-    target_file = str(pathlib.Path().absolute()) + file_name
+    target_file = file_name if Path(file_name).exists() else str(Path().absolute()) + file_name
     # Reading an image in default mode
     src = cv2.imread(target_file)
     dst = LSFilter(src).filter()
@@ -21,7 +21,7 @@ def main(file_name):
 
 
 if __name__ == "__main__":
-    file_name = "/samples/peppers.jpg"
+    file_name = "/samples/beach.jpg"
     if len(sys.argv) > 1:
         file_name = sys.argv[1]
 
