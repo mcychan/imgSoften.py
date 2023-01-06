@@ -12,13 +12,13 @@ class LSFilter:
         self._side = np.clip(side, 3, 5)
         self._offset = self._side // 2
         self._beta = lamda
-        self._lamda = beta / 500 if beta > 500 else beta / 50
+        self._lamda = beta / 250 if beta > 500 else beta / 50
 
 
     def getValue(self, x, y, x1, y1):
         if x1 < 0 or y1 < 0 or x1 >= self._width or y1 >= self._height:
             return 0
-        if (x, y) == (x1, y1):
+        if x == x1 and y == y1:
             return 1
 
         pixels = self._pixels
@@ -30,11 +30,11 @@ class LSFilter:
         offset, side = self._offset, self._side
         I = np.eye(side)
         laplacian = np.zeros(I.shape)
-        for j in range(-offset, offset):
-            y1 = y + j
-            for i in range(-offset, offset):
-                x1 = x + i
-                laplacian[i + offset, j + offset] = self.getValue(x, y, x1, y1)
+        for j in range(side):
+            y1 = y + j - offset
+            for i in range(side):
+                x1 = x + i - offset
+                laplacian[i, j] = self.getValue(x, y, x1, y1)
 
         result = I * self._lamda + laplacian @ laplacian.T
         return np.linalg.inv(result) * self._lamda
@@ -46,22 +46,22 @@ class LSFilter:
         sMatrix = self.getSmoothedKernel(x, y)
 
         acc = np.zeros(pixels.shape[2])
-        for j in range(-offset, offset):
-            y1 = y + j
+        for j in range(side):
+            y1 = y + j - offset
             if y1 < 0 or y1 >= height:
                 continue
 
-            for i in range(-offset, offset):
-                x1 = x + j
+            for i in range(side):
+                x1 = x + j - offset
                 if x1 < 0 or x1 >= width:
                     continue
 
-                acc += pixels[x1, y1] * sMatrix[i + offset, j + offset]
-        return np.clip(acc, 0, 255)
+                acc += pixels[x1, y1] * sMatrix[i, j]
+        return np.rint(np.clip(acc, 0, 255))
 
 
     def filter(self):
-        pixels, qPixels = self._pixels, self._pixels.copy()
+        pixels, qPixels = self._pixels, np.zeros(self._pixels.shape, np.uint8)
         width, height = self._width, self._height
         for y in range(height):
             for x in range(width):
