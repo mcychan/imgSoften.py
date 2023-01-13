@@ -4,13 +4,13 @@ from pathlib import Path
 import sys
 import traceback
 
-from LSFilter import LSFilter
+from AnisotropicDiffusionFilter import AnisotropicDiffusionFilter
 
 def main(file_name):
     target_file = file_name if Path(file_name).exists() else str(Path().absolute()) + file_name
     # Reading an image in default mode
     src = cv2.imread(target_file)
-    dst = LSFilter(src).filter()
+    dst = AnisotropicDiffusionFilter(src).filter()
 
     htich = np.hstack((src, dst))
     cv2.imshow('merged_img', htich)
