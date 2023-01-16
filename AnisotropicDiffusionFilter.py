@@ -17,7 +17,7 @@ class AnisotropicDiffusionFilter:
     def flux_derivative(self, news):
         kappa = self._kappa
         if self._useExp:
-            return np.exp(-1 * ((news / kappa) ** 2))
+            return np.exp(-(((news / kappa) ** 2)))
 
         return 1 / (1 + ((news / kappa) ** 2))
 
@@ -32,16 +32,16 @@ class AnisotropicDiffusionFilter:
         north, east, west, south = pixels[x - offset, y], pixels[x, y + offset], pixels[x, y - offset], pixels[x + offset, y]
         center = pixels[x, y]
 
-        news = np.array([north - center, east - center, west - center, south - center])
+        news = np.array([north, east, west, south]) - center
         cNews = self.flux_derivative(news)
         return self.getValue(center, cNews, news)
 
 
     def filter(self):
-        pixels = self._pixels
+        qPixels = self._pixels
         iteration, offset, width, height = self._iteration, self._offset, self._width, self._height
         for z in range(iteration):
             for y in range(offset, height - offset):
                 for x in range(offset, width - offset):
-                    pixels[x, y] = self.doFilter(x, y)
-        return pixels
+                    qPixels[x, y] = self.doFilter(x, y)
+        return qPixels
