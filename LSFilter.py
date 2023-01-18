@@ -10,13 +10,12 @@ class LSFilter:
         self._width, self._height, _ = pixels.shape
         self._pixels = pixels
         self._side = np.clip(side, 3, 5)
-        self._offset = self._side // 2
         self._beta = lamda
         self._lamda = beta / 250 if beta > 500 else beta / 50
 
 
     def getValue(self, x, y, x1, y1):
-        if x1 < 0 or y1 < 0 or x1 >= self._width or y1 >= self._height:
+        if x1 >= self._width or y1 >= self._height:
             return 0
         if x == x1 and y == y1:
             return 1
@@ -27,13 +26,13 @@ class LSFilter:
 
 
     def getSmoothedKernel(self, x, y):
-        offset, side = self._offset, self._side
+        side = self._side
         I = np.eye(side)
         laplacian = np.zeros(I.shape)
         for j in range(side):
-            y1 = y + j - offset
+            y1 = y + j
             for i in range(side):
-                x1 = x + i - offset
+                x1 = x + i
                 laplacian[i, j] = self.getValue(x, y, x1, y1)
 
         result = I * self._lamda + laplacian @ laplacian.T
@@ -41,23 +40,23 @@ class LSFilter:
 
 
     def doFilter(self, x, y):
-        offset, pixels, side = self._offset, self._pixels, self._side
+        pixels, side = self._pixels, self._side
         width, height = self._width, self._height
         sMatrix = self.getSmoothedKernel(x, y)
 
         acc = np.zeros(pixels.shape[2])
         for j in range(side):
-            y1 = y + j - offset
-            if y1 < 0 or y1 >= height:
+            y1 = y + j
+            if y1 >= height:
                 continue
 
             for i in range(side):
-                x1 = x + j - offset
-                if x1 < 0 or x1 >= width:
+                x1 = x + j
+                if x1 >= width:
                     continue
 
                 acc += pixels[x1, y1] * sMatrix[i, j]
-        return np.rint(np.clip(acc, 0, 255))
+        return np.clip(acc, 0, 255)
 
 
     def filter(self):
