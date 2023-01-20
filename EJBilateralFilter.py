@@ -19,13 +19,13 @@ class EJBilateralFilter:
         self._pixels = np.array(cv2.cvtColor(pixels, cv2.COLOR_BGR2YCR_CB), dtype = np.float32)
         self._diameter = diameter
         self._pixelY, self._pixelCr, self._pixelCb = self._pixels[:, :, 0], self._pixels[:, :, 1], self._pixels[:, :, 2]
-        self._sigmaS, self._sigmaR0, self._sigmaR1, self._sigmaR2 = sigmaS, np.std(self._pixelY), np.std(self._pixelCr), np.std(self._pixelCb)
+        self._sigmaS, self._sigmaR = sigmaS, np.array([np.std(self._pixelY), np.std(self._pixelCr), np.std(self._pixelCb)])
 
 
     def doFilter(self, x, y):
         pixels, diameter = self._pixels, self._diameter
         width, height = self._width, self._height
-        sigmaS, sigmaR = self._sigmaS, np.array([self._sigmaR0, self._sigmaR1, self._sigmaR2])
+        sigmaS, sigmaR = self._sigmaS, self._sigmaR
 
         iFiltered, wP = np.zeros(pixels.shape[2]), np.zeros(pixels.shape[2])
         x1, y1, half = 0, 0, diameter // 2
