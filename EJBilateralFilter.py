@@ -13,13 +13,14 @@ def distance(x, y, i, j):
 def gaussian(pixel, sigma):
     return np.exp(-(pixel ** 2)/(2 * (sigma ** 2)) / (2 * np.pi * (sigma ** 2)))
 
+
 class EJBilateralFilter:
     def __init__(self, pixels, diameter = 5, sigmaS = 4.0):
         self._width, self._height, _ = pixels.shape
         self._pixels = np.array(cv2.cvtColor(pixels, cv2.COLOR_BGR2YCR_CB), dtype = np.float32)
         self._diameter = diameter
-        self._pixelY, self._pixelCr, self._pixelCb = self._pixels[:, :, 0], self._pixels[:, :, 1], self._pixels[:, :, 2]
-        self._sigmaS, self._sigmaR = sigmaS, np.array([np.std(self._pixelY), np.std(self._pixelCr), np.std(self._pixelCb)])
+        pixelY, pixelCr, pixelCb = self._pixels[:, :, 0], self._pixels[:, :, 1], self._pixels[:, :, 2]
+        self._sigmaS, self._sigmaR = sigmaS, np.array([np.std(pixelY), np.std(pixelCr), np.std(pixelCb)])
 
 
     def doFilter(self, x, y):

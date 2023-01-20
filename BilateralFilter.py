@@ -4,6 +4,14 @@ import numpy as np
 # https://en.wikipedia.org/wiki/Bilateral_filter
 # Copyright (c) 2023 Miller Cy Chan
 
+def distance(x, y, i, j):
+    return np.sqrt((x - i) ** 2 + (y - j) ** 2)
+
+
+def gaussian(pixel, sigma):
+    return np.exp(-(pixel ** 2)/(2 * (sigma ** 2)) / (2 * np.pi * (sigma ** 2)))
+
+
 class BilateralFilter:
     def __init__(self, pixels, diameter = 5, sigmaI = 12.0, sigmaS = 16.0):
         self._width, self._height, _ = pixels.shape
@@ -11,16 +19,6 @@ class BilateralFilter:
         self._diameter = diameter
         self._sigmaI = sigmaI
         self._sigmaS = sigmaS
-
-
-    @staticmethod
-    def distance(x, y, i, j):
-        return np.sqrt((x - i) ** 2 + (y - j) ** 2)
-
-
-    @staticmethod
-    def gaussian(pixel, sigma):
-        return np.exp(-(pixel ** 2)/(2 * (sigma ** 2)) / (2 * np.pi * (sigma ** 2)))
 
 
     def doFilter(self, x, y):
@@ -41,8 +39,8 @@ class BilateralFilter:
                 if y1 < 0 or y1 >= height:
                     continue
 
-                gs = BilateralFilter.gaussian(BilateralFilter.distance(x, y, x1, y1), sigmaS)
-                w = gs * BilateralFilter.gaussian(pixels[x1, y1] - pixels[x, y], sigmaI)
+                gs = gaussian(distance(x, y, x1, y1), sigmaS)
+                w = gs * gaussian(pixels[x1, y1] - pixels[x, y], sigmaI)
                 iFiltered += pixels[x1, y1] * w
                 wP += w
         return np.rint(iFiltered / wP)
