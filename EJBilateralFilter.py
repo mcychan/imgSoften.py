@@ -49,9 +49,9 @@ class EJBilateralFilter:
 
 
     def filter(self):
-        pixels, qPixels = self._pixels, np.zeros(self._pixels.shape, np.float32)
+        pixels, qPixels = self._pixels, np.zeros(self._pixels.shape, np.uint8)
         width, height = self._width, self._height
         for y in range(height):
             for x in range(width):
                 qPixels[x, y] = self.doFilter(x, y)
-        return cv2.cvtColor(np.array(qPixels, dtype = np.uint8), cv2.COLOR_YCR_CB2BGR)
+        return cv2.cvtColor(qPixels, cv2.COLOR_YCR_CB2BGR)
