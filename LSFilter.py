@@ -10,29 +10,30 @@ class LSFilter:
         self._width, self._height, _ = pixels.shape
         self._pixels = pixels
         self._side = np.clip(side, 3, 5)
+        self._offset = self._side // 2
         self._beta = lamda
         self._lamda = beta / 250 if beta > 500 else beta / 50
 
 
     def getValue(self, x, y, x1, y1):
-        if x1 >= self._width or y1 >= self._height:
+        if x1 < 0 or y1 < 0 or x1 >= self._width or y1 >= self._height:
             return 0
         if x == x1 and y == y1:
             return 1
 
         pixels = self._pixels
-        value = np.sum((pixels[x1, y1] - pixels[x, y]) ** 2)
-        return -np.exp(-self._beta * value)
+        color_diff = np.sum((pixels[x1, y1] - pixels[x, y]) ** 2)
+        return -np.exp(-self._beta * color_diff)
 
 
     def getSmoothedKernel(self, x, y):
-        side = self._side
+        offset, side = self._offset, self._side
         I = np.eye(side)
         laplacian = np.zeros(I.shape)
         for j in range(side):
-            y1 = y + j
+            y1 = y + j - offset
             for i in range(side):
-                x1 = x + i
+                x1 = x + i - offset
                 laplacian[i, j] = self.getValue(x, y, x1, y1)
 
         result = I * self._lamda + laplacian @ laplacian.T
@@ -40,22 +41,22 @@ class LSFilter:
 
 
     def doFilter(self, x, y):
-        pixels, side = self._pixels, self._side
+        offset, pixels, side = self._offset, self._pixels, self._side
         width, height = self._width, self._height
-        sMatrix = self.getSmoothedKernel(x, y)
+        laplacian = self.getSmoothedKernel(x, y)
 
         acc = np.zeros(pixels.shape[2])
         for j in range(side):
-            y1 = y + j
-            if y1 >= height:
+            y1 = y + j - offset
+            if y1 < 0 or y1 >= height:
                 continue
 
             for i in range(side):
-                x1 = x + j
-                if x1 >= width:
+                x1 = x + j - offset
+                if x1 < 0 or x1 >= width:
                     continue
 
-                acc += pixels[x1, y1] * sMatrix[i, j]
+                acc += pixels[x1, y1] * laplacian[i, j]
         return np.clip(acc, 0, 255)
 
 
