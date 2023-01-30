@@ -49,7 +49,7 @@ class FGSFilter:
         idx0 += 1
         idx1 = 1 + n * width if horizontal else n + width
 
-        for _ in range(1, len(b_vec)):
+        for _ in range(1, length):
             m = 1.0 / (b_vec[bIdx] - a_vec[aIdx] * c_vec[cIdx])
             cIdx += 1
             c_vec[cIdx] *= m
