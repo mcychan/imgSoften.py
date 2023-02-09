@@ -68,7 +68,7 @@ class LPGPCAFilter:
                 y = M + j
 
                 for l in range(ch):
-                    X[channels[l], :] = nI[i : x, j : y, l].T.reshape(-1)
+                    X[channels[l], :] = nI[j : y, i : x, l].T.reshape(-1)
                 k += 1
 
         # XT = X.T
@@ -100,7 +100,7 @@ class LPGPCAFilter:
                 channels, cj = [k, k + b2, k + b2 * 2][: ch], c + j
 
                 for l in range(ch):
-                    layer = Y[channels[l], :].reshape(M1, N1).T
+                    layer = Y[channels[l], :].T.reshape(N1, M1)
                     for n in range(N1):
                         dI[ri[n], cj, l] += layer[n]
                         im_wei[ri[n], cj, l] += 1
