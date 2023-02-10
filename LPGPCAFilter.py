@@ -49,7 +49,11 @@ class LPGPCAFilter:
 
 
     def progress(self, percent_complete):
-        print(int(percent_complete), "percent complete", end='\r')
+        if percent_complete < 100:
+            print(int(percent_complete), "percent complete", end='\r')
+        else:
+            print("Well done!         ", end='\r')
+            print("")
 
     def doFilter(self, nI, v2, stage):
         k, nblk, s, S = 0, self._nblk, 2, self._S
@@ -59,12 +63,12 @@ class LPGPCAFilter:
         N, M = w - b + 1, h - b + 1
         L = N * M
         c = np.arange(M)[::s]
-        c = np.append(c, c[-1])
+        c = np.append(c, c[-1] + 1)
         r = np.arange(N)[::s]
-        r = np.append(r, r[-1])
+        r = np.append(r, r[-1] + 1)
         X = np.zeros((b2 * ch, L))
 
-        self.progress(1 + 50 * (stage - 1))
+        self.progress(0)
 
         for i in range(b):
             x = N + i
@@ -82,7 +86,7 @@ class LPGPCAFilter:
         N1, M1 = len(r), len(c)
         Y = np.zeros((b2 * ch, N1 * M1))
 
-        self.progress(2 + 50 * (stage - 1))
+        self.progress(1 + 50 * (stage - 1))
 
         k = 0
         for i in range(N1):
@@ -99,17 +103,17 @@ class LPGPCAFilter:
                 wei = px / py
                 Y[:, off1] = P.T @ (coe[:, 0] * wei) + mX[:, 0]
                 k += 1
-                self.progress(k * 46 / (N1 * M1) + 2 + 50 * (stage - 1))
+                self.progress(k * 48 / (N1 * M1) + 1 + 50 * (stage - 1))
 
-        self.progress(48 + 50 * (stage - 1))
+        self.progress(49 + 50 * (stage - 1))
 
         # Output the processed image
         dI, im_wei = np.zeros((w, h, ch)), np.zeros((w, h, ch))
         k = 0
         for i in range(b):
-            ri = r + i
+            ri = np.clip(r + i, 0, w - 1)
             for j in range(b):
-                channels, cj = [k, k + b2, k + b2 * 2][: ch], c + j
+                channels, cj = [k, k + b2, k + b2 * 2][: ch], np.clip(c + j, 0, h - 1)
 
                 for l in range(ch):
                     layer = Y[channels[l], :].reshape(M1, N1).T
@@ -117,7 +121,6 @@ class LPGPCAFilter:
                         dI[ri[n], cj, l] += layer[n]
                         im_wei[ri[n], cj, l] += 1
                 k += 1
-                self.progress(k * 2 / b2 + 48 + 50 * (stage - 1))
 
         dI /= im_wei + np.finfo(float).eps
 
