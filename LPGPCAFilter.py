@@ -48,7 +48,10 @@ class LPGPCAFilter:
         return P[: n, :] @ X
 
 
-    def doFilter(self, nI, v2):
+    def progress(self, percent_complete):
+        print(int(percent_complete), "percent complete", end='\r')
+
+    def doFilter(self, nI, v2, stage):
         k, nblk, s, S = 0, self._nblk, 2, self._S
         ch, w, h = self._channels, self._width, self._height
         b = 2 * self._t + 1
@@ -56,10 +59,12 @@ class LPGPCAFilter:
         N, M = w - b + 1, h - b + 1
         L = N * M
         c = np.arange(M)[::s]
-        c = np.append(c, c[-1] + 1)
+        c = np.append(c, c[-1])
         r = np.arange(N)[::s]
-        r = np.append(r, r[-1] + 1)
+        r = np.append(r, r[-1])
         X = np.zeros((b2 * ch, L))
+
+        self.progress(1 + 50 * (stage - 1))
 
         for i in range(b):
             x = N + i
@@ -68,15 +73,18 @@ class LPGPCAFilter:
                 y = M + j
 
                 for l in range(ch):
-                    X[channels[l], :] = nI[j : y, i : x, l].T.reshape(-1)
+                    X[channels[l], :] = nI[i : x, j : y, l].T.reshape(-1)
                 k += 1
 
-        XT = X.T
-        # XT = self.dim_reduction(X).T
+        # XT = X.T
+        XT = self.dim_reduction(X).T
         I = np.arange(L).reshape(M, N).T
         N1, M1 = len(r), len(c)
         Y = np.zeros((b2 * ch, N1 * M1))
 
+        self.progress(2 + 50 * (stage - 1))
+
+        k = 0
         for i in range(N1):
             row = r[i]
             for j in range(M1):
@@ -90,6 +98,10 @@ class LPGPCAFilter:
                 px[px < 0], py[py == 0] = 0, np.finfo(float).eps
                 wei = px / py
                 Y[:, off1] = P.T @ (coe[:, 0] * wei) + mX[:, 0]
+                k += 1
+                self.progress(k * 46 / (N1 * M1) + 2 + 50 * (stage - 1))
+
+        self.progress(48 + 50 * (stage - 1))
 
         # Output the processed image
         dI, im_wei = np.zeros((w, h, ch)), np.zeros((w, h, ch))
@@ -100,24 +112,27 @@ class LPGPCAFilter:
                 channels, cj = [k, k + b2, k + b2 * 2][: ch], c + j
 
                 for l in range(ch):
-                    layer = Y[channels[l], :].T.reshape(N1, M1)
+                    layer = Y[channels[l], :].reshape(M1, N1).T
                     for n in range(N1):
                         dI[ri[n], cj, l] += layer[n]
                         im_wei[ri[n], cj, l] += 1
                 k += 1
+                self.progress(k * 2 / b2 + 48 + 50 * (stage - 1))
 
         dI /= im_wei + np.finfo(float).eps
+
+        self.progress(50 + 50 * (stage - 1))
         return np.clip(dI, 0, 255)
 
 
     def stage1(self, nI):
         v2 = self._v ** 2
-        return self.doFilter(nI, v2)
+        return self.doFilter(nI, v2, 1)
 
 
     def stage2(self, nI, v1):
         v2 = (v1 * 0.37) ** 2
-        return self.doFilter(nI, v2)
+        return self.doFilter(nI, v2, 2)
 
 
     def filter(self):
