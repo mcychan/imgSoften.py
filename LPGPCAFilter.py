@@ -10,9 +10,9 @@ class LPGPCAFilter:
         self._width, self._height, self._channels = pixels.shape
         self._pixels = pixels.astype(dtype = np.float32)
 
-        noisePixels = np.random.rand(self._width, self._height, self._channels) ** 2
-        noisePixels /= np.sqrt(np.mean(noisePixels))
-        self._noisePixels = self._pixels + v * noisePixels
+        noise = np.random.rand(self._width, self._height, self._channels) ** 2
+        noise /= np.sqrt(np.sum(noise) / np.size(noise))
+        self._noisePixels = np.clip(self._pixels + v * noise, 0, 255).astype(dtype = np.uint8)
         self._nblk, self._S, self._t, self._v = nblk, S, t, v
 
 
@@ -21,7 +21,7 @@ class LPGPCAFilter:
         mx = np.array([np.mean(X, axis = 1)] * N).T
         X1 = X - mx
         CovX = X1 @ X1.T / (N - 1)
-        V, P = np.linalg.eig(CovX)
+        V, P = np.linalg.eigh(CovX)
         ind = np.argsort(-V)
         V = V[ind]
         P = P[:, ind].T
@@ -71,8 +71,8 @@ class LPGPCAFilter:
                     X[channels[l], :] = nI[j : y, i : x, l].T.reshape(-1)
                 k += 1
 
-        # XT = X.T
-        XT = self.dim_reduction(X).T
+        XT = X.T
+        # XT = self.dim_reduction(X).T
         I = np.arange(L).reshape(M, N).T
         N1, M1 = len(r), len(c)
         Y = np.zeros((b2 * ch, N1 * M1))
@@ -107,11 +107,11 @@ class LPGPCAFilter:
                 k += 1
 
         dI /= im_wei + np.finfo(float).eps
-        return dI
+        return np.clip(dI, 0, 255)
 
 
-    def stage1(self):
-        nI, v2 = self._noisePixels, self._v ** 2
+    def stage1(self, nI):
+        v2 = self._v ** 2
         return self.doFilter(nI, v2)
 
 
@@ -123,8 +123,8 @@ class LPGPCAFilter:
     def filter(self):
         width, height, channels = self._width, self._height, self._channels
 
-        qPixels = self.stage1()
         nI = self._noisePixels
+        qPixels = self.stage1(nI)
         diff, v2 = qPixels - nI, self._v ** 2
         vd = np.mean(v2 + np.mean(diff ** 2, axis = (0, 1)))
         v1 = np.sqrt(abs(vd))
