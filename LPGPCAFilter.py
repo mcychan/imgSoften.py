@@ -11,7 +11,7 @@ class LPGPCAFilter:
         self._pixels = pixels.astype(dtype = np.float32)
 
         noise = np.random.rand(self._width, self._height, self._channels) ** 2
-        noise /= np.sqrt(np.sum(noise) / np.size(noise))
+        noise /= np.sqrt(np.mean(noise))
         self._noisePixels = np.clip(self._pixels + v * noise, 0, 255).astype(dtype = np.uint8)
         self._nblk, self._S, self._t, self._v = nblk, S, t, v
 
@@ -138,13 +138,24 @@ class LPGPCAFilter:
         return self.doFilter(nI, v2, 2)
 
 
+    def csnr(self, A, B, row = 0, col = 0):
+        w, h, ch = A.shape
+        e = A - B
+        e = e[row : w - row, col : h - col]
+        me = np.mean(e ** 2, axis = (0, 1))
+        ee = np.mean(me)
+        return 10 * np.log10((255 ** 2) / ee)
+
+
     def filter(self):
         width, height, channels = self._width, self._height, self._channels
 
         nI = self._noisePixels
         qPixels = self.stage1(nI)
         diff, v2 = qPixels - nI, self._v ** 2
-        vd = np.mean(v2 + np.mean(diff ** 2, axis = (0, 1)))
+        vd = np.mean(v2 - np.mean(diff ** 2, axis = (0, 1)))
         v1 = np.sqrt(abs(vd))
         qPixels = self.stage2(qPixels, v1)
+        psnr = self.csnr(self._pixels, qPixels)
+        print("PSNR:", psnr)
         return qPixels.astype(dtype = np.uint8)
