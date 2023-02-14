@@ -55,20 +55,21 @@ class LPGPCAFilter:
             print("Well done!         ", end='\r')
             print("")
 
+
     def doFilter(self, nI, v2, stage):
         k, nblk, s, S = 0, self._nblk, 2, self._S
         ch, w, h = self._channels, self._width, self._height
-        b = 2 * self._t
+        b = 2 * self._t + 1
         b2 = b ** 2
         N, M = w - b + 1, h - b + 1
         L = N * M
         c = np.arange(M)[::s]
         c = np.append(c, c[-1] + 1)
         r = np.arange(N)[::s]
-        r = np.append(r, r[-1])
+        r = np.append(r, r[-1] + 1)
         X = np.zeros((b2 * ch, L))
 
-        self.progress(0)
+        self.progress(0 + 50 * (stage - 1))
 
         for i in range(b):
             x = N + i
@@ -93,10 +94,7 @@ class LPGPCAFilter:
             row = r[i]
             for j in range(M1):
                 col = c[j]
-                off, off1 = col * N + row, j * N1 + i
-                if off >= L or off1 >= (N1 * M1):
-                    i = N1
-                    break
+                off, off1 = np.clip(col * N + row, 0, L - 1), np.clip(j * N1 + i, 0, (N1 * M1) - 1)
 
                 indc = self.LPG_new(XT, row, col, off, nblk, S, I)
                 coe, P, V, mX = self.getPca(X[:, indc])
@@ -114,15 +112,16 @@ class LPGPCAFilter:
         dI, im_wei = np.zeros((w, h, ch)), np.zeros((w, h, ch))
         k = 0
         for i in range(b):
-            ri = np.clip(0, r + i, w - 1)
+            ri = r + i
             for j in range(b):
                 channels, cj = [k, k + b2, k + b2 * 2][: ch], np.clip(c + j, 0, h - 1)
 
                 for l in range(ch):
                     layer = Y[channels[l], :].reshape(M1, N1).T
                     for n in range(N1):
-                        dI[ri[n], cj, l] += layer[n]
-                        im_wei[ri[n], cj, l] += 1
+                        if ri[n] < w:
+                            dI[ri[n], cj, l] += layer[n]
+                            im_wei[ri[n], cj, l] += 1
                 k += 1
 
         dI /= im_wei + np.finfo(float).eps
