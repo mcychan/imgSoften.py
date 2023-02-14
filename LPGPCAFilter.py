@@ -64,9 +64,9 @@ class LPGPCAFilter:
         N, M = w - b + 1, h - b + 1
         L = N * M
         c = np.arange(M)[::s]
-        c = np.append(c, c[-1] if w < h else c[-1] + 1)
+        c = np.append(c, c[-1] + 1)
         r = np.arange(N)[::s]
-        r = np.append(r, r[-1])
+        r = np.append(r, r[-1] + 1 if N >= M else r[-1])
         X = np.zeros((b2 * ch, L))
 
         self.progress(0 + 50 * (stage - 1))
