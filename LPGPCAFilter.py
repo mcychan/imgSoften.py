@@ -64,9 +64,9 @@ class LPGPCAFilter:
         N, M = w - b + 1, h - b + 1
         L = N * M
         c = np.arange(M)[::s]
-        c = np.append(c, c[-1] + 1)
+        c = np.append(c, c[-1] if w < h else c[-1] + 1)
         r = np.arange(N)[::s]
-        r = np.append(r, r[-1] + 1)
+        r = np.append(r, r[-1])
         X = np.zeros((b2 * ch, L))
 
         self.progress(0 + 50 * (stage - 1))
@@ -112,16 +112,15 @@ class LPGPCAFilter:
         dI, im_wei = np.zeros((w, h, ch)), np.zeros((w, h, ch))
         k = 0
         for i in range(b):
-            ri = r + i
+            ri = np.clip(r + i, 0, w - 1)
             for j in range(b):
                 channels, cj = [k, k + b2, k + b2 * 2][: ch], np.clip(c + j, 0, h - 1)
 
                 for l in range(ch):
                     layer = Y[channels[l], :].reshape(M1, N1).T
                     for n in range(N1):
-                        if ri[n] < w:
-                            dI[ri[n], cj, l] += layer[n]
-                            im_wei[ri[n], cj, l] += 1
+                        dI[ri[n], cj, l] += layer[n]
+                        im_wei[ri[n], cj, l] += 1
                 k += 1
 
         dI /= im_wei + np.finfo(float).eps
