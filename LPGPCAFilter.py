@@ -7,10 +7,10 @@ import numpy as np
 
 class LPGPCAFilter:
     def __init__(self, pixels, v = 20, S = 20, t = 3, nblk = 250):
-        self._width, self._height, self._channels = pixels.shape
+        self._height, self._width, self._channels = pixels.shape
         self._pixels = pixels.astype(dtype = np.float32)
 
-        noise = np.random.rand(self._width, self._height, self._channels) ** 2
+        noise = np.random.rand(self._height, self._width, self._channels) ** 2
         noise /= np.sqrt(np.mean(noise))
         self._noisePixels = np.clip(self._pixels + v * noise, 0, 255).astype(dtype = np.uint8)
         self._nblk, self._S, self._t, self._v = nblk, S, t, v
@@ -58,15 +58,15 @@ class LPGPCAFilter:
 
     def doFilter(self, nI, v2, stage):
         k, nblk, s, S = 0, self._nblk, 2, self._S
-        ch, w, h = self._channels, self._width, self._height
+        ch, h, w = self._channels, self._height, self._width
         b = 2 * self._t + 1
         b2 = b ** 2
-        N, M = w - b + 1, h - b + 1
+        N, M = h - b + 1, w - b + 1
         L = N * M
         c = np.arange(M)[::s]
         c = np.append(c, c[-1] + 1)
         r = np.arange(N)[::s]
-        r = np.append(r, r[-1])
+        r = np.append(r, r[-1] if M > N and h % 2 > 0 else r[-1] + 1)
         X = np.zeros((b2 * ch, L))
 
         self.progress(0 + 50 * (stage - 1))
@@ -109,16 +109,13 @@ class LPGPCAFilter:
         self.progress(49 + 50 * (stage - 1))
 
         # Output the processed image
-        dI, im_wei = np.zeros((w, h, ch)), np.zeros((w, h, ch))
+        dI, im_wei = np.zeros((h, w, ch)), np.zeros((h, w, ch))
         k = 0
         for i in range(b):
-            ri = r + i
-            if N >= M:
-                ri[-1] += 1
-            ri = np.clip(ri, 0, w - 1)
+            ri = np.clip(r + i, 0, h - 1)
 
             for j in range(b):
-                channels, cj = [k, k + b2, k + b2 * 2][: ch], np.clip(c + j, 0, h - 1)
+                channels, cj = [k, k + b2, k + b2 * 2][: ch], np.clip(c + j, 0, w - 1)
 
                 for l in range(ch):
                     layer = Y[channels[l], :].reshape(M1, N1).T
@@ -144,9 +141,9 @@ class LPGPCAFilter:
 
 
     def csnr(self, A, B, row = 0, col = 0):
-        w, h, ch = A.shape
+        h, w, ch = A.shape
         e = A - B
-        e = e[row : w - row, col : h - col]
+        e = e[row : h - row, col : w - col]
         me = np.mean(e ** 2, axis = (0, 1))
         ee = np.mean(me)
         return 10 * np.log10((255 ** 2) / ee)
