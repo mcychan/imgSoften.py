@@ -18,7 +18,7 @@ class LPGPCAFilter:
 
     def getPca(self, X):
         M, N = X.shape[:2]
-        mx = np.array([np.mean(X, axis = 1)] * N).T
+        mx = np.tile(np.mean(X, axis = 1), N).reshape(N, M).T
         X1 = X - mx
         CovX = X1 @ X1.T / (N - 1)
         V, P = np.linalg.eigh(CovX)
@@ -30,10 +30,10 @@ class LPGPCAFilter:
 
 
     def LPG_new(self, X, row, col, off, nv, S, I):
-        N, M = I.shape[:2]
+        M, N = I.shape[:2]
         f2 = X.shape[1]
-        rmin, rmax = max(row - S, 0), min(row + S, N)
-        cmin, cmax = max(col - S, 0), min(col + S, M)
+        rmin, rmax = max(row - S, 0), min(row + S, M)
+        cmin, cmax = max(col - S, 0), min(col + S, N)
         idx = I[rmin: rmax, cmin: cmax].reshape(-1)
         B, v = X[idx, :], X[off, :]
 
