@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 
 # Lei Zhang, Weisheng Dong, David Zhang, Guangming Shi
@@ -141,52 +140,6 @@ class LPGPCAFilter:
         return self.doFilter(nI, v2, 2)
 
 
-    def psnr(self, A, B, row = 0, col = 0):
-        h, w = A.shape[: 2]
-        e = A - B
-        e = e[row : h - row, col : w - col]
-        mse = np.mean(e ** 2)
-        if mse == 0:
-            return np.INF
-        return 10 * np.log10((255 ** 2) / mse)
-
-
-    def ssim(self, A, B, row = 0, col = 0):
-        h, w = A.shape[: 2]
-        k1, k2, L = 0.01, 0.03, 255
-        C1, C2 = (k1 * L) ** 2, (k2 * L) ** 2
-        kernel = cv2.getGaussianKernel(11, 1.5)
-        window = np.outer(kernel, kernel.transpose())
-
-        A1, B1 = A[row : h - row, col : w - col], B[row : h - row, col : w - col]
-        mu1, mu2 = cv2.filter2D(A1, -1, window)[5 : -5, 5 : -5], cv2.filter2D(B1, -1, window)[5 : -5, 5 : -5]
-        mu1_sq, mu2_sq = mu1 ** 2, mu2 ** 2
-        mu1_mu2 = mu1 * mu2
-        sigma1_sq = cv2.filter2D(A1 ** 2, -1, window)[5 : -5, 5 : -5] - mu1_sq
-        sigma2_sq = cv2.filter2D(B1 ** 2, -1, window)[5 : -5, 5 : -5] - mu2_sq
-        sigma12 = cv2.filter2D(A1 * B1, -1, window)[5 : -5, 5 : -5] - mu1_mu2
-
-        ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
-        return ssim_map.mean()
-
-
-    def calculate_ssim(self, A, B, row = 0, col = 0):
-        if not A.shape == B.shape:
-            raise ValueError("Input images must have the same dimensions.")
-        if A.ndim == 2:
-            return self.ssim(A, B, row, col)
-        if A.ndim == 3:
-            if A.shape[2] == 3:
-                ssims = []
-                for i in range(3):
-                    ssims.append(self.ssim(A, B, row, col))
-                return np.array(ssims).mean()
-            if A.shape[2] == 1:
-                return self.ssim(np.squeeze(A), np.squeeze(B), row, col)
-        else:
-            raise ValueError("Wrong input image dimensions.")
-
-
     def filter(self):
         width, height, channels = self._width, self._height, self._channels
 
@@ -196,6 +149,4 @@ class LPGPCAFilter:
         vd = np.mean(v2 - np.mean(diff ** 2, axis = (0, 1)))
         v1 = np.sqrt(abs(vd))
         qPixels = self.stage2(qPixels, v1)
-        psnr, ssim = self.psnr(self._pixels, qPixels), self.calculate_ssim(self._pixels, qPixels)
-        print("PSNR:", psnr, "SSIM:", ssim)
         return qPixels.astype(dtype = np.uint8)

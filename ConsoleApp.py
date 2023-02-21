@@ -4,6 +4,8 @@ from pathlib import Path
 import sys
 import traceback
 
+from Evaluate import *
+
 from EJBilateralFilter import EJBilateralFilter
 
 def main(file_name):
@@ -12,6 +14,8 @@ def main(file_name):
     src = cv2.imread(target_file)
     dst = EJBilateralFilter(src).filter()
 
+    psnr, ssim = calculate_psnr(src, dst), calculate_ssim(src, dst)
+    print("PSNR:", psnr, "SSIM:", ssim)
     htich = np.hstack((src, dst))
     cv2.imshow('merged_img', htich)
     cv2.waitKey(0)
