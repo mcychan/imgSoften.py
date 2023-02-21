@@ -10,7 +10,7 @@ class AnisotropicDiffusionFilter:
         self._lamda = lamda
         self._kappa = kappa
         self._useExp = useExp
-        self._width, self._height, self._channel = pixels.shape
+        self._height, self._width, self._channel = pixels.shape
         self._offset = 1
         self._pixels = np.copy(pixels)
 
@@ -26,22 +26,32 @@ class AnisotropicDiffusionFilter:
         return center + self._lamda * np.sum(cNews * news, axis = 0)
 
 
-    def doFilter(self, x, y):
+    def doFilter(self, y, x):
         offset, pixels = self._offset, self._pixels
         width, height = self._width, self._height
-        north, east, west, south = pixels[x - offset, y], pixels[x, y + offset], pixels[x, y - offset], pixels[x + offset, y]
-        center = pixels[x, y]
+        north, east, west, south = pixels[y, x - offset], pixels[y + offset, x], pixels[y - offset, x], pixels[y, x + offset]
+        center = pixels[y, x]
 
         news = np.array([north, east, west, south]) - center
         cNews = self.flux_derivative(news)
         return self.getValue(center, cNews, news)
 
 
+    def progress(self, percent_complete):
+        if percent_complete < 100:
+            print(int(percent_complete), "percent complete", end='\r')
+        else:
+            print("Well done!         ", end='\r')
+            print("")
+
+
     def filter(self):
         qPixels = self._pixels
-        iteration, offset, width, height = self._iteration, self._offset, self._width, self._height
-        for z in range(iteration):
+        num_iterations, offset, width, height = self._iteration, self._offset, self._width, self._height
+        for z in range(num_iterations):
+            self.progress(z * 100 / num_iterations)
             for y in range(offset, height - offset):
                 for x in range(offset, width - offset):
-                    qPixels[x, y] = self.doFilter(x, y)
+                    qPixels[y, x] = self.doFilter(y, x)
+        self.progress(100)
         return qPixels

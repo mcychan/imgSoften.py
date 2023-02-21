@@ -7,7 +7,7 @@ import numpy as np
 
 class LSFilter:
     def __init__(self, pixels, side = 5, beta = 1500, lamda = 1e-4):
-        self._width, self._height, _ = pixels.shape
+        self._height, self._width, _ = pixels.shape
         self._pixels = pixels
         self._side = np.clip(side, 3, 5)
         self._offset = self._side // 2
@@ -22,11 +22,11 @@ class LSFilter:
             return 1
 
         pixels = self._pixels
-        color_diff = np.sum((pixels[x1, y1] - pixels[x, y]) ** 2)
+        color_diff = np.sum((pixels[y1, x1] - pixels[y, x]) ** 2)
         return -np.exp(-self._beta * color_diff)
 
 
-    def getSmoothedKernel(self, x, y):
+    def getSmoothedKernel(self, y, x):
         offset, side = self._offset, self._side
         I = np.eye(side)
         laplacian = np.zeros(I.shape)
@@ -34,16 +34,16 @@ class LSFilter:
             y1 = y + j - offset
             for i in range(side):
                 x1 = x + i - offset
-                laplacian[i, j] = self.getValue(x, y, x1, y1)
+                laplacian[j, i] = self.getValue(x, y, x1, y1)
 
         result = I * self._lamda + laplacian @ laplacian.T
         return np.linalg.inv(result) * self._lamda
 
 
-    def doFilter(self, x, y):
+    def doFilter(self, y, x):
         offset, pixels, side = self._offset, self._pixels, self._side
         width, height = self._width, self._height
-        laplacian = self.getSmoothedKernel(x, y)
+        laplacian = self.getSmoothedKernel(y, x)
 
         acc = np.zeros(pixels.shape[2])
         for j in range(side):
@@ -56,14 +56,25 @@ class LSFilter:
                 if x1 < 0 or x1 >= width:
                     continue
 
-                acc += pixels[x1, y1] * laplacian[i, j]
+                acc += pixels[y1, x1] * laplacian[j, i]
         return np.clip(acc, 0, 255)
+
+
+    def progress(self, percent_complete):
+        if percent_complete < 100:
+            print(int(percent_complete), "percent complete", end='\r')
+        else:
+            print("Well done!         ", end='\r')
+            print("")
 
 
     def filter(self):
         pixels, qPixels = self._pixels, np.zeros(self._pixels.shape, np.uint8)
         width, height = self._width, self._height
+        k = 0
         for y in range(height):
             for x in range(width):
-                qPixels[x, y] = self.doFilter(x, y)
+                qPixels[y, x] = self.doFilter(y, x)
+                k += 1
+                self.progress(k * 100 / (width * height))
         return qPixels

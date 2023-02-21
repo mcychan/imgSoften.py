@@ -7,7 +7,7 @@ import numpy as np
 
 class FGSFilter:
     def __init__(self, pixels, sigma = 0.1, lamda = 900, joint_pixels = None, num_iterations = 3, attenuation = 4):
-        self._width, self._height, channels = pixels.shape
+        self._height, self._width, channels = pixels.shape
         self._pixels = np.copy(pixels)
         self._pixels = np.array(self._pixels.reshape(self._width * self._height, channels), dtype = np.float32)
         if joint_pixels is not None:
@@ -80,10 +80,20 @@ class FGSFilter:
             idx1 -= 0 if horizontal else width - 1
 
 
+    def progress(self, percent_complete):
+        if percent_complete < 100:
+            print(int(percent_complete), "percent complete", end='\r')
+        else:
+            print("Well done!         ", end='\r')
+            print("")
+
+
     def filter(self):
         num_iterations, width, height = self._num_iterations, self._width, self._height
         pixels = self._pixels
+
         for z in range(num_iterations):
+            self.progress(z * 100 / num_iterations)
             for y in range(height):
                 self.doFilter(y, width, True)
 
@@ -91,5 +101,6 @@ class FGSFilter:
                 self.doFilter(x, height, False)
 
             self._lamda_in /= self._attenuation
+        self.progress(100)
 
-        return pixels.reshape(width, height, pixels.shape[1]).astype(dtype = np.uint8)
+        return pixels.reshape(height, width, pixels.shape[1]).astype(dtype = np.uint8)
