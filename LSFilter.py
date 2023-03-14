@@ -22,28 +22,28 @@ class LSFilter:
             return 1
 
         pixels = self._pixels
-        color_diff = np.sum((pixels[y1, x1] - pixels[y, x]) ** 2)
-        return -np.exp(-self._beta * color_diff)
+        diff = pixels[y1, x1] - pixels[y, x]
+        return -np.exp(-self._beta * np.dot(diff.T, diff))
 
 
     def getSmoothedKernel(self, y, x):
         offset, side = self._offset, self._side
         I = np.eye(side)
-        laplacian = np.zeros(I.shape)
+        L = np.zeros(I.shape)
         for j in range(side):
             y1 = y + j - offset
             for i in range(side):
                 x1 = x + i - offset
-                laplacian[j, i] = self.getValue(x, y, x1, y1)
+                L[j, i] = self.getValue(x, y, x1, y1)
 
-        result = I * self._lamda + laplacian @ laplacian.T
+        result = I * self._lamda + np.dot(L.T, L)
         return np.linalg.inv(result) * self._lamda
 
 
     def doFilter(self, y, x):
         offset, pixels, side = self._offset, self._pixels, self._side
         width, height = self._width, self._height
-        laplacian = self.getSmoothedKernel(y, x)
+        kernel = self.getSmoothedKernel(y, x)
 
         acc = np.zeros(pixels.shape[2])
         for j in range(side):
@@ -56,7 +56,7 @@ class LSFilter:
                 if x1 < 0 or x1 >= width:
                     continue
 
-                acc += pixels[y1, x1] * laplacian[j, i]
+                acc += pixels[y1, x1] * kernel[j, i]
         return np.clip(acc, 0, 255)
 
 
