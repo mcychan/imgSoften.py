@@ -6,36 +6,41 @@ import numpy as np
 # Copyright (c) 2023 Miller Cy Chan
 
 class LSFilter:
-    def __init__(self, pixels, side = 5, beta = 1500, lamda = 1e-4):
+    def __init__(self, pixels, side = 3, beta = 1500, lamda = 1e-4):
         self._height, self._width, _ = pixels.shape
         self._pixels = pixels
         self._side = np.clip(side, 3, 5)
         self._offset = self._side // 2
-        self._beta = lamda
-        self._lamda = beta / 250 if beta > 500 else beta / 50
+        self._beta = beta
+        self._lamda = lamda
 
 
-    def getValue(self, x, y, x1, y1):
+    def getValue(self, y, x, y1, x1):
         if x1 < 0 or y1 < 0 or x1 >= self._width or y1 >= self._height:
-            return 0
+            return (0, 0)
         if x == x1 and y == y1:
-            return 1
+            return (1, 1)
 
         pixels = self._pixels
-        diff = pixels[y1, x1] - pixels[y, x]
-        return -np.exp(-self._beta * np.dot(diff.T, diff))
+        diff = (pixels[y1, x1] - pixels[y, x]) / 255
+        return (np.exp(-self._beta * np.dot(diff.T, diff)), -1)
 
 
     def getSmoothedKernel(self, y, x):
         offset, side = self._offset, self._side
         I = np.eye(side)
-        L = np.zeros(I.shape)
+        filter, L = np.zeros(I.shape).astype(bool), np.zeros(I.shape).astype(dtype = np.float32)
         for j in range(side):
             y1 = y + j - offset
             for i in range(side):
-                x1 = x + i - offset
-                L[j, i] = self.getValue(x, y, x1, y1)
+                x1 = x + j - offset
+                tuple = self.getValue(y, x, y1, x1)
+                L[j, i] = tuple[0]
+                if tuple[1] < 0:
+                    filter[j, i] = True
 
+        divisor = np.sum(L[filter]) + np.finfo(float).eps
+        L[filter] /= -divisor
         result = I * self._lamda + np.dot(L.T, L)
         return np.linalg.inv(result) * self._lamda
 
@@ -45,14 +50,14 @@ class LSFilter:
         width, height = self._width, self._height
         kernel = self.getSmoothedKernel(y, x)
 
-        acc = np.zeros(pixels.shape[2])
+        acc = pixels[y, x].astype(dtype = np.float32)
         for j in range(side):
             y1 = y + j - offset
             if y1 < 0 or y1 >= height:
                 continue
 
             for i in range(side):
-                x1 = x + j - offset
+                x1 = x + i - offset
                 if x1 < 0 or x1 >= width:
                     continue
 
