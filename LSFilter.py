@@ -10,7 +10,7 @@ class LSFilter:
         self._height, self._width, _ = pixels.shape
         self._pixels = pixels
         self._side = np.clip(side, 3, 5)
-        self._offset = self._side // 2
+        self._offset, self._I = self._side // 2, np.eye(side)
         self._beta = beta
         self._lamda = lamda
 
@@ -22,13 +22,12 @@ class LSFilter:
             return (1, 1)
 
         pixels = self._pixels
-        diff = pixels[y1, x1] - pixels[y, x]
-        return (np.exp(-self._beta * np.dot(diff.T, diff)), -1)
+        diff = (pixels[y1, x1] - pixels[y, x]) / 255
+        return (np.exp(-self._beta * diff.T.dot(diff)), -1)
 
 
     def getSmoothedKernel(self, y, x):
-        offset, side = self._offset, self._side
-        I = np.eye(side)
+        offset, side, I = self._offset, self._side, self._I
         filter, L = np.zeros(I.shape).astype(bool), np.zeros(I.shape).astype(dtype = np.float32)
         for j in range(side):
             y1 = y + j - offset
@@ -40,10 +39,13 @@ class LSFilter:
                     filter[j, i] = True
 
         divisor = np.sum(L[filter])
-        if divisor != 0:
-            L[filter] /= -divisor
-        result = self._lamda * I + np.dot(L.T, L)
-        return self._lamda * np.linalg.inv(result)
+        if divisor == 0:
+            L[filter] = 1
+            divisor = np.sum(L[filter])
+
+        L[filter] /= -divisor
+        result = self._lamda * I + L.T.dot(L)
+        return self._lamda * np.linalg.pinv(result)
 
 
     def doFilter(self, y, x):
