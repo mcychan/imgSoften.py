@@ -22,9 +22,9 @@ class LSFilter:
             return (1, 1)
 
         pixels = self._pixels
-        diff = (pixels[y1, x1] - pixels[y, x])
+        diff = (pixels[y1, x1] - pixels[y, x]).astype(dtype = np.float32)
         if np.sum(diff) < (256 * pixels.shape[2]):
-            return (1, -1)
+            diff *= (self._lamda ** 2)
         return (np.exp(-self._beta * diff.T.dot(diff)), -1)
 
 
