@@ -6,11 +6,11 @@
 
 imgSoften.py is a collection of image Filters for smoothing and edge enhancement that include:
 - Anisotropic Diffusion
-- Bilateral
-- EJBilateral
-- FGS
-- LPGPCA
-- LS
+- Bilateral Filter
+- Extended Joint Bilateral Filter
+- Fast Global Image Smoothing based on Weighted Least Squares
+- Local Pixel Grouping Pattern Recognition Filter
+- Least-squares images Filter
 
 
 ```python
