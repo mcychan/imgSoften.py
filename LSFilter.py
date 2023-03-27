@@ -22,7 +22,9 @@ class LSFilter:
             return (1, 1)
 
         pixels = self._pixels
-        diff = (pixels[y1, x1] - pixels[y, x]) / 255
+        diff = (pixels[y1, x1] - pixels[y, x])
+        if np.sum(diff) < (255 * 4):
+            return (1, -1)
         return (np.exp(-self._beta * diff.T.dot(diff)), -1)
 
 
@@ -32,18 +34,15 @@ class LSFilter:
         for j in range(side):
             y1 = y + j - offset
             for i in range(side):
-                x1 = x + j - offset
+                x1 = x + i - offset
                 tuple = self.getValue(y, x, y1, x1)
                 L[j, i] = tuple[0]
                 if tuple[1] < 0:
                     filter[j, i] = True
 
         divisor = np.sum(L[filter])
-        if divisor == 0:
-            L[filter] = 1
-            divisor = np.sum(L[filter])
-
-        L[filter] /= -divisor
+        if divisor != 0:
+            L[filter] /= -divisor
         result = self._lamda * I + L.T.dot(L)
         return self._lamda * np.linalg.pinv(result)
 
