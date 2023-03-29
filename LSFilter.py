@@ -23,7 +23,6 @@ class LSFilter:
 
         pixels = self._pixels
         diff = (pixels[y1, x1] - pixels[y, x]).astype(dtype = np.float32)
-        diff *= self._lamda / self._side
         return (np.exp(-self._beta * diff.T.dot(diff)), -1)
 
 
@@ -33,7 +32,7 @@ class LSFilter:
         for j in range(side):
             y1 = y + j - offset
             for i in range(side):
-                x1 = x + i - offset
+                x1 = x + j - offset
                 tuple = self.getValue(y, x, y1, x1)
                 L[j, i] = tuple[0]
                 if tuple[1] < 0:
