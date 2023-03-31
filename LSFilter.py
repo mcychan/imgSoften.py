@@ -28,7 +28,7 @@ class LSFilter:
 
     def getSmoothedKernel(self, y, x):
         offset, side, I = self._offset, self._side, self._I
-        center, filter, L = side // 2, np.zeros(I.shape).astype(bool), np.zeros(I.shape).astype(dtype = np.float32)
+        filter, L = np.zeros(I.shape).astype(bool), np.zeros(I.shape).astype(dtype = np.float32)
         for j in range(side):
             y1 = y + j - offset
             for i in range(side):
@@ -43,7 +43,7 @@ class LSFilter:
         divisor = np.sum(L[filter])
         if divisor != 0:
             L[filter] /= -divisor
-        L[center, center] = 1
+        L[offset, offset] = 1
         return L
 
 
