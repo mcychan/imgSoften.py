@@ -6,9 +6,7 @@ def calculate_psnr(src, dst, row = 0, col = 0):
     h, w = src.shape[: 2]
     e = cv2.absdiff(src.astype(dtype = np.float32), dst.astype(dtype = np.float32))
     e = e[row : h - row, col : w - col]
-    mse = np.mean(e ** 2)
-    if mse == 0:
-        return np.INF
+    mse = np.mean(e ** 2) + np.finfo(float).eps
     return 10 * np.log10((255 ** 2) / mse)
 
 
