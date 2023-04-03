@@ -11,8 +11,8 @@ class LSFilter:
         self._pixels = pixels
         self._side = np.clip(side, 3, 5)
         self._offset, self._I = self._side // 2, np.eye(side)
-        self._beta = beta
-        self._lamda = lamda
+        self._beta = lamda # swap lamda and beta due to exp(-1500 * (value > 1)) tends to 0
+        self._lamda = beta
 
 
     def getValue(self, y, x, y1, x1):
