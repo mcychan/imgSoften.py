@@ -43,7 +43,6 @@ class LSFilter:
         divisor = np.sum(L[filter])
         if divisor != 0:
             L[filter] /= -divisor
-        L[offset, offset] = 1
         return L
 
 
