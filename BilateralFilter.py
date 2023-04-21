@@ -4,14 +4,6 @@ import numpy as np
 # https://en.wikipedia.org/wiki/Bilateral_filter
 # Copyright (c) 2023 Miller Cy Chan
 
-def distance(x, y, i, j):
-    return np.sqrt((x - i) ** 2 + (y - j) ** 2)
-
-
-def gaussian(pixel, sigma):
-    return np.exp(-(pixel ** 2)/(2 * (sigma ** 2)) / (2 * np.pi * (sigma ** 2)))
-
-
 class BilateralFilter:
     def __init__(self, pixels, diameter = 5, sigmaI = 12.0, sigmaS = 16.0):
         self._height, self._width, _ = pixels.shape
@@ -21,7 +13,19 @@ class BilateralFilter:
         self._sigmaS = sigmaS
 
 
+    @staticmethod
+    def distance(x, y, i, j):
+        return np.sqrt((x - i) ** 2 + (y - j) ** 2)
+
+
+    @staticmethod
+    def gaussian(diff, sigma):
+        sigma2 = sigma ** 2
+        return np.exp(-(diff ** 2) / (2 * sigma2) / (2 * np.pi * sigma2))
+
+
     def doFilter(self, y, x):
+        distance, gaussian = BilateralFilter.distance, BilateralFilter.gaussian
         pixels, diameter = self._pixels, self._diameter
         width, height = self._width, self._height
         sigmaI, sigmaS = self._sigmaI, self._sigmaS

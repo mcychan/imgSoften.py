@@ -1,18 +1,11 @@
 import cv2
 import numpy as np
+from BilateralFilter import BilateralFilter
 
 # Wada, Naofumi & Kazui, Masato & Haseyama, Miki. (2015).
 # Extended Joint Bilateral Filter for the Reduction of Color Bleeding in Compressed Image and Video.
 # ITE Transactions on Media Technology and Applications. 3. 95-106. 10.3169/mta.3.95. 
 # Copyright (c) 2023 Miller Cy Chan
-
-def distance(x, y, i, j):
-    return np.sqrt((x - i) ** 2 + (y - j) ** 2)
-
-
-def gaussian(pixel, sigma):
-    return np.exp(-(pixel ** 2)/(2 * (sigma ** 2)) / (2 * np.pi * (sigma ** 2)))
-
 
 class EJBilateralFilter:
     def __init__(self, pixels, diameter = 5, sigmaS = 4.0):
@@ -24,6 +17,7 @@ class EJBilateralFilter:
 
 
     def doFilter(self, y, x):
+        distance, gaussian = BilateralFilter.distance, BilateralFilter.gaussian
         pixels, diameter = self._pixels, self._diameter
         width, height = self._width, self._height
         sigmaS, sigmaR = self._sigmaS, self._sigmaR
